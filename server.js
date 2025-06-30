@@ -8,6 +8,11 @@ dotenv.config();
 // to run the project with express
 const app = express();
 
+// middleware
+app.use(cors()); // so you can access the api alhouth from different port
+app.use(express.json());
+
+
 // connect to mongodb <<BookShop>>
 const connectDB = require("./config/db");
 connectDB();
@@ -16,6 +21,10 @@ connectDB();
 const authRoutes = require("./routes/auth.routes");
 app.use('/api/auth', authRoutes); // معناه ان عشان استخدم ال  route  دا لازم اكتب  المسار دا الاول  "/api/auth/"
 // بمعنى  .... "/api/auth/getAllUser" => return all user in db
+
+// user routes
+const userRoutes = require("./routes/user.routes");
+app.use('/api/user', userRoutes);
 
 // start server
 const PORT = process.env.PORT;
