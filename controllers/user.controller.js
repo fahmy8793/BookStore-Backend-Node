@@ -16,7 +16,6 @@ const getProfile = async (req, res) => {
 // end getting user profile
 
 // update profile
-
 const updateProfile = async (req, res) => {
     try {
         // get user

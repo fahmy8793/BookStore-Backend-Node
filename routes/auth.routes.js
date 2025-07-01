@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { register, login,sendOTP,verifyOTP } = require("../controllers/auth.controller");
+const { register, login,sendOTP,verifyOTP,resetPassword } = require("../controllers/auth.controller");
 
 // register route
 router.post('/register', register); // to use it , you must write /api/auth/register
@@ -13,5 +13,8 @@ router.post('/send-otp', sendOTP);
 
 // verifiy OTP
 router.post('/verify-otp', verifyOTP);
+
+// reset password
+router.post('/reset-password', resetPassword);
 
 module.exports = router;

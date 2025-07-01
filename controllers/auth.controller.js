@@ -157,5 +157,38 @@ const verifyOTP = async (req, res) => {
 }
 // end verifing OTP
 
+// reset password
+const resetPassword = async (req, res) => {
+    const { resetToken, newPassword } = req.body;
+    try {
+        // check user and token and it's expire date
+        const user = await User.findOne({
+            resetPasswordToken: resetToken,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or Expired token" });
+        }
+        // all is good so the user can add the new password
+        // hash the new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        // update the password and delete the token
+        user.password = hashedPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+        // the response
+        res.status(200).json({ message: "password has been reset successfully" });
 
-module.exports = { register, login, sendOTP, verifyOTP };
+    } catch (err) {
+        res.status(500).json({
+            message: "server error",
+            error:err.message
+         });
+    }
+}
+// end reset password
+
+
+module.exports = { register, login, sendOTP, verifyOTP,resetPassword };

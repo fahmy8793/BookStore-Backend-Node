@@ -5,8 +5,13 @@ const { getProfile, updatePassword, updateProfile } = require("../controllers/us
 
 const authMiddleware = require("../middlewares/authMiddleware");
 
+// get user profile
 router.get('/get/profile', authMiddleware, getProfile);
+
+// update user profile
 router.put('/update/profile', authMiddleware, updateProfile);
+
+// update user password => if he know it and want to change it
 router.put('/update/password', authMiddleware, updatePassword);
 
 module.exports = router;
