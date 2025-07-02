@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const Book = require('../models/book.model');
-const Order = require('../models/order.model');
-const User = require('../models/user.model');
+const Book = require('../../models/book.model');
+const Order = require('../../models/order.model');
+const User = require('../../models/user.model');
 
 export const checkoutOrder = async(req, res) => {
     const session = await mongoose.startSession();
