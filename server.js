@@ -32,7 +32,7 @@ app.use('/api/book', bookRoutes);
 
 // order routes
 const orderRoutes = require('./routes/order.routes');
-app.use('/apoi/order', orderRoutes);
+app.use('/api/order', orderRoutes);
 
 // admin routes
 const adminRoutes = require('./routes/admin.routes');

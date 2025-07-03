@@ -11,15 +11,18 @@ const checkoutOrder = async(req, res) => {
         const { books, total } = req.body;
         
         const user = await User.findById(userId).session(session);
+        console.log('User ID:', userId);
+        console.log('Books:', books);
+        console.log('total:', total);
         if(!user) {
             throw new Error('User not found');
         }
 
         calculatedTotal = 0;
         for(const item of books) {
-            const book = await Book.findById(item.bookId).session(session);
+            const book = await Book.findById(item.book).session(session);
             if(!book) {
-                throw new Error(`Book with ID ${item.bookId} not found`);
+                throw new Error(`Book with ID ${item.book} not found`);
             }
 
             if(book.stock < item.quantity) {
@@ -45,7 +48,7 @@ const checkoutOrder = async(req, res) => {
         await user.save({ session });
 
         const orderBooks = books.map(item => ({
-            book: item.bookId,
+            book: item.book,
             quantity: item.quantity
         }));
 
