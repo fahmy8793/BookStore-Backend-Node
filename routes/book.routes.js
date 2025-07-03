@@ -40,7 +40,7 @@ const validate = require('../middlewares/validate');
 const { createBookValidator, getBooksValidator } = require('../validators/book.validators');
 const bookController = require('../controllers/book.controller');
 
-// ✅ Create Book with upload pdf + image
+//  Create Book with upload pdf + image
 router.post(
   '/upload',
   authMiddleware,
@@ -54,7 +54,7 @@ router.post(
   bookController.uploadBook  // تأكد إن الدالة دي موجودة في الكونترولر وتتعامل مع req.files
 );
 
-// ✅ Get All Books + فلترة
+//  Get All Books 
 router.get(
   '/',
   getBooksValidator,
