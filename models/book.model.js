@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-
+//   inventoryStatus?: 'INSTOCK' | 'LOWSTOCK' | 'OUTOFSTOCK';
+//   isWishlisted?: boolean; // Managed by frontend for display
 const bookSchema = new mongoose.Schema({
     title: {
         type: String,

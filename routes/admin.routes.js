@@ -6,3 +6,5 @@ const isAdmin = require('../middlewares/isAdmin');
 const router = express.Router();
 
 router.get('/dashboard', authMiddleware, isAdmin, getDashboardStats);
+
+module.exports = router;
