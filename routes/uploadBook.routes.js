@@ -8,7 +8,7 @@ const cloudinary = require('../config/cloudinary');
 
 const upload = multer({ dest: 'uploads/' });
 
-router.post('/upload', upload.fields([
+router.post('/uploads', upload.fields([
   { name: 'pdf', maxCount: 1 },
   { name: 'image', maxCount: 1 }
 ]), async (req, res) => {
@@ -21,17 +21,28 @@ router.post('/upload', upload.fields([
     const pdfPath = req.files.pdf[0].path;
     const imagePath = req.files.image[0].path;
 
+    const cleanTitle = (title) => {
+  if (!title || typeof title !== 'string') return 'untitled';
+  return title.trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '').toLowerCase();
+};
+
+const publicId = `${cleanTitle(title)}_${Date.now()}`;
+
+
     const pdfUpload = await cloudinary.uploader.upload(pdfPath, {
       resource_type: "raw",
       folder: "books/pdf",
       format: "pdf",
-      upload_preset: "bookStore"
+      upload_preset: "bookStore",
+      public_id: title.replace(/\s+/g, '_').toLowerCase()
 
     });
 
     const imageUpload = await cloudinary.uploader.upload(imagePath, {
       folder: "books/images",
-      upload_preset: "bookStore"
+      upload_preset: "bookStore",
+      public_id: title.replace(/\s+/g, '_').toLowerCase()
+
 
     });
 
