@@ -28,8 +28,6 @@ router.post('/upload', upload.fields([
       upload_preset: "bookStore"
 
     });
-console.log(pdfUpload)
-
 
     const imageUpload = await cloudinary.uploader.upload(imagePath, {
       folder: "books/images",
