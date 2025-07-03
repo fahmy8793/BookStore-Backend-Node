@@ -12,6 +12,9 @@ const app = express();
 app.use(cors()); // so you can access the api alhouth from different port
 app.use(express.json());
 
+//uploadBook routes
+const uploadBookRoutes = require('./routes/uploadBook.routes');
+app.use('/books', uploadBookRoutes);
 
 // connect to mongodb <<BookShop>>
 const connectDB = require("./config/db");
