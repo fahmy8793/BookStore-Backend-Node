@@ -26,6 +26,20 @@ app.use('/api/auth', authRoutes); // معناه ان عشان استخدم ال 
 const userRoutes = require("./routes/user.routes");
 app.use('/api/user', userRoutes);
 
+// book routes
+const bookRoutes = require('./routes/book.routes')
+app.use('/api/book', bookRoutes);
+
+// order routes
+const orderRoutes = require('./routes/order.routes');
+app.use('/apoi/order', orderRoutes);
+
+// admin routes
+const adminRoutes = require('./routes/admin.routes');
+app.use('/api/admin', adminRoutes);
+
+
+
 // start server
 const PORT = process.env.PORT;
 app.listen(PORT, () => {

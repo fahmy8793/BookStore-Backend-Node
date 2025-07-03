@@ -2,7 +2,7 @@ const User = require('../models/user.model');
 const Book = require('../models/book.model');
 const Order = require('../models/order.model');
 
-export const getDashboardStats = async (req, res) => {
+const getDashboardStats = async (req, res) => {
     try{
         const totalBooks = await Book.countDocuments();
         const totalUsers = await User.countDocuments();
@@ -36,3 +36,7 @@ export const getDashboardStats = async (req, res) => {
         });
     }
 }
+
+module.exports = {
+    getDashboardStats
+};

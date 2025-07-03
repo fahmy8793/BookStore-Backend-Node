@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Order = require('../../models/order.model');
 
-export const getMyOrders = async (req, res) => {
+const getMyOrders = async (req, res) => {
     try{
         const userId = req.user.id;
         const orders = await Order.find({ user: userId })
@@ -20,7 +20,7 @@ export const getMyOrders = async (req, res) => {
     }
 }
 
-export const getOrderById = async(req, res) => {
+const getOrderById = async(req, res) => {
     try {
         const userId = req.user.id;
         const order = await Order.findById( {user : userId} )
@@ -50,3 +50,8 @@ export const getOrderById = async(req, res) => {
         });
     }
 }
+
+module.exports = {
+    getMyOrders,
+    getOrderById
+};
