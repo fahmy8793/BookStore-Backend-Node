@@ -51,7 +51,7 @@ router.post(
   ]),
   createBookValidator,
   validate,
-  bookController.uploadBook  // تأكد إن الدالة دي موجودة في الكونترولر وتتعامل مع req.files
+  bookController.uploadBook  
 );
 
 //  Get All Books 

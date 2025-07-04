@@ -11,6 +11,9 @@ const createBookValidator = [
 ];
 
 const getBooksValidator = [
+      query('minPrice').optional().isInt({ min: 0 }).withMessage('minPrice must be a positive number'),
+  query('maxPrice').optional().isInt({ min: 0 }).withMessage('maxPrice must be a positive number'),
+
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be 1 or more'),
   query('limit').optional().isInt({ min: 1 }).withMessage('Limit must be 1 or more'),
   query('author').optional().isString(),

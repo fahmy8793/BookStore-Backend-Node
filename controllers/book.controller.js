@@ -68,12 +68,21 @@ const uploadBook = async (req, res) => {
 
 const getAllBooks = async (req, res) => {
   try {
-    const { author, category, page = 1, limit = 10 } = req.query;
+    
+    // Validate query parameters
+    const { author, category, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
     const filter = {};
 
+// Construct filter based on query parameters
     if (author) filter.author = { $regex: author, $options: 'i' };
     if (category) filter.category = { $regex: category, $options: 'i' };
+    if (minPrice || maxPrice) {// If either minPrice or maxPrice is provided, create a price filter
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);  
+      if (maxPrice) filter.price.$lte = Number(maxPrice);  
+    }
 
+    // Pagination logic
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const books = await Book.find(filter).skip(skip).limit(parseInt(limit));
@@ -82,7 +91,7 @@ const getAllBooks = async (req, res) => {
     res.status(200).json({
       message: 'Books retrieved successfully',
       data: books,
-      pagination: {
+      pagination: { // Pagination information
         total,
         page: parseInt(page),
         pages: Math.ceil(total / parseInt(limit))
