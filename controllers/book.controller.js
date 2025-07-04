@@ -3,6 +3,9 @@ const fs = require('fs');
 const Book = require('../models/book.model');
 const { validationResult } = require('express-validator');
 const cloudinary = require('../config/cloudinary');
+const Review = require('../models/review.model');
+
+
 
 const uploadBook = async (req, res) => {
   try {
@@ -70,18 +73,31 @@ const getAllBooks = async (req, res) => {
   try {
     
     // Validate query parameters
-    const { author, category, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
+    const {title, author, category, minPrice, maxPrice,minStock, maxStock, page = 1, limit = 10 } = req.query;
     const filter = {};
 
 // Construct filter based on query parameters
+
+//filter by author
     if (author) filter.author = { $regex: author, $options: 'i' };
+//filter by category
     if (category) filter.category = { $regex: category, $options: 'i' };
-    if (minPrice || maxPrice) {// If either minPrice or maxPrice is provided, create a price filter
+   
+    // filter by minPrice and maxPrice
+    if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = Number(minPrice);  
       if (maxPrice) filter.price.$lte = Number(maxPrice);  
     }
+// filter by title
+if (title) filter.title = { $regex: title, $options: 'i' }; //
 
+// filter by stock
+if (minStock || maxStock) {
+  filter.stock = {};
+  if (minStock) filter.stock.$gte = Number(minStock);
+  if (maxStock) filter.stock.$lte = Number(maxStock);
+}
     // Pagination logic
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -105,8 +121,33 @@ const getAllBooks = async (req, res) => {
   }
 };
 
+// Retrieve a single book by ID
+const getBookById = async (req, res) => {
+  try {
+    const bookId = req.params.id;
+
+    const book = await Book.findById(bookId).populate('reviews'); 
+
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    res.status(200).json({
+      message: 'Book retrieved successfully',
+      data: book
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: 'Failed to retrieve book',
+      error: err.message
+    });
+  }
+};
+
 module.exports = {
-  uploadBook,
-  getAllBooks
+    uploadBook,
+    getAllBooks,
+    getBookById
+
 };
 
