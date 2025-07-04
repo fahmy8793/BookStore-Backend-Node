@@ -46,5 +46,13 @@ router.get(
     bookController.getBookById
 );
 
+//  Update Book
+//put /api/book/:id
+router.patch('/:id', authMiddleware, isAdmin, bookController.updateBook);
+
+//  Delete Book
+//delete /api/book/:id
+router.delete('/:id', authMiddleware, isAdmin, bookController.deleteBook);
+
 
 module.exports = router;

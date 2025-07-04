@@ -6,7 +6,7 @@ const cloudinary = require('../config/cloudinary');
 const Review = require('../models/review.model');
 
 
-
+// Upload a new book with PDF and image files
 const uploadBook = async (req, res) => {
   try {
     // Validate request body
@@ -68,7 +68,7 @@ const uploadBook = async (req, res) => {
     res.status(500).json({ error: 'Upload failed', message: err.message });
   }
 };
-
+// Retrieve all books with optional filtering and pagination
 const getAllBooks = async (req, res) => {
   try {
     
@@ -144,10 +144,65 @@ const getBookById = async (req, res) => {
   }
 };
 
+//  Update book by ID
+
+const updateBook = async (req, res) => {
+  try {
+    const bookId = req.params.id;
+    const updateData = req.body;
+
+    const updatedBook = await Book.findByIdAndUpdate(bookId, updateData, {
+      new: true, // return the updated document
+      runValidators: true
+    });
+
+    if (!updatedBook) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    res.status(200).json({
+      message: 'Book updated successfully',
+      data: updatedBook
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: 'Failed to update book',
+      error: err.message
+    });
+  }
+};
+
+//  Delete book by ID
+const deleteBook = async (req, res) => {
+  try {
+    const bookId = req.params.id;
+
+    const deletedBook = await Book.findByIdAndDelete(bookId);
+
+    if (!deletedBook) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    res.status(200).json({
+      message: 'Book deleted successfully',
+      data: deletedBook
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: 'Failed to delete book',
+      error: err.message
+    });
+  }
+};
+
+
+
 module.exports = {
     uploadBook,
     getAllBooks,
-    getBookById
+    getBookById,
+    updateBook,
+    deleteBook
 
 };
 
