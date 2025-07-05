@@ -43,16 +43,17 @@ router.get(
     '/:id',
     authMiddleware,
     param('id').isMongoId().withMessage('Invalid book ID'),
+    validate,
     bookController.getBookById
 );
 
 //  Update Book
 //put /api/book/:id
-router.patch('/:id', authMiddleware, isAdmin, bookController.updateBook);
+router.patch('/:id', authMiddleware, isAdmin,validate, bookController.updateBook);
 
 //  Delete Book
 //delete /api/book/:id
-router.delete('/:id', authMiddleware, isAdmin, bookController.deleteBook);
+router.delete('/:id', authMiddleware, isAdmin,validate, bookController.deleteBook);
 
 
 module.exports = router;
