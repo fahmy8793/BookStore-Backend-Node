@@ -31,6 +31,11 @@ app.use('/api/user', userRoutes);
 const bookRoutes = require('./routes/book.routes')
 app.use('/api/book', bookRoutes);
 
+// book summarize route
+//
+const summarizeRoute = require('./routes/summarize.routes');
+app.use('/api/book', summarizeRoute); 
+
 // order routes
 const orderRoutes = require('./routes/order.routes');
 app.use('/api/order', orderRoutes);
