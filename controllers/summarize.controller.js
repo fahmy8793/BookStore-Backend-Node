@@ -30,7 +30,7 @@ const summarizeTextWithCohere = async (text) => {
     'https://api.cohere.ai/v1/summarize',
     {
       text,
-      length: 'long',
+      length: 'medium', // خليها medium عشان ميبقاش التلخيص طويل أوي
       format: 'paragraph',
       model: 'command'
     },
@@ -68,7 +68,11 @@ const summarizeBook = async (req, res) => {
       return res.status(400).json({ error: 'Book content is too short or unreadable to summarize.' });
     }
 
-    const chunks = splitTextIntoChunks(textContent, 3000);
+    // 🟡 ناخد أول 50% بس من الكتاب
+    const halfTextLength = Math.floor(textContent.length * 0.5);
+    const partialText = textContent.slice(0, halfTextLength);
+
+    const chunks = splitTextIntoChunks(partialText, 3000);
     const summaries = [];
 
     for (const chunk of chunks) {
