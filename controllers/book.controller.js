@@ -1,10 +1,8 @@
-
-const fs = require('fs');
-const Book = require('../models/book.model');
-const { validationResult } = require('express-validator');
-const cloudinary = require('../config/cloudinary');
-const Review = require('../models/review.model');
-
+const fs = require("fs");
+const Book = require("../models/book.model");
+const { validationResult } = require("express-validator");
+const cloudinary = require("../config/cloudinary");
+const Review = require("../models/review.model");
 
 // Upload a new book with PDF and image files
 const uploadBook = async (req, res) => {
@@ -15,10 +13,7 @@ const uploadBook = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const {
-      title, author, description,
-      category, price, stock
-    } = req.body;
+    const { title, author, description, category, price, stock } = req.body;
 
     // check if required fields are present
     let pdfUploadResult = null;
@@ -29,24 +24,24 @@ const uploadBook = async (req, res) => {
         folder: "books/pdf",
         format: "pdf",
         upload_preset: "bookStore",
-        public_id: title.replace(/\s+/g, '_').toLowerCase()
+        public_id: title.replace(/\s+/g, "_").toLowerCase(),
       });
       fs.unlinkSync(pdfPath);
     }
 
-// check if image file is present
+    // check if image file is present
     if (!req.files?.image || req.files.image.length === 0) {
-      return res.status(400).json({ error: 'Image file is required.' });
+      return res.status(400).json({ error: "Image file is required." });
     }
     const imagePath = req.files.image[0].path;
     const imageUpload = await cloudinary.uploader.upload(imagePath, {
       folder: "books/images",
       upload_preset: "bookStore",
-      public_id: title.replace(/\s+/g, '_').toLowerCase()
+      public_id: title.replace(/\s+/g, "_").toLowerCase(),
     });
     fs.unlinkSync(imagePath);
 
-// Create new book entry
+    // Create new book entry
     const newBook = await Book.create({
       title,
       author,
@@ -55,91 +50,124 @@ const uploadBook = async (req, res) => {
       price,
       stock,
       image: imageUpload.secure_url,
-      pdfPath: pdfUploadResult ? pdfUploadResult.secure_url : null
+      pdfPath: pdfUploadResult ? pdfUploadResult.secure_url : null,
     });
 
     res.status(201).json({
-      message: 'Book uploaded successfully!',
-      book: newBook
+      message: "Book uploaded successfully!",
+      book: newBook,
     });
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Upload failed', message: err.message });
+    res.status(500).json({ error: "Upload failed", message: err.message });
   }
 };
 // Retrieve all books with optional filtering and pagination
 const getAllBooks = async (req, res) => {
   try {
-    
-    // Validate query parameters
-    const {title, author, category, minPrice, maxPrice,minStock, maxStock, page = 1, limit = 10 } = req.query;
-    const filter = {};
+    // 1. استخلاص كل الخيارات من الطلب مع قيم افتراضية
+    const { author, category, sort = "rating" } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
 
-// Construct filter based on query parameters
+    // 2. بناء مرحلة الفلترة ($match)
+    const matchStage = {};
+    if (author) matchStage.author = { $regex: author, $options: "i" };
+    if (category) matchStage.category = { $regex: category, $options: "i" };
 
-//filter by author
-    if (author) filter.author = { $regex: author, $options: 'i' };
-//filter by category
-    if (category) filter.category = { $regex: category, $options: 'i' };
-   
-    // filter by minPrice and maxPrice
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = Number(minPrice);  
-      if (maxPrice) filter.price.$lte = Number(maxPrice);  
+    // 3. بناء مرحلة الترتيب ($sort)
+    let sortStage = {};
+    switch (sort) {
+      case "priceAsc":
+        sortStage = { price: 1 };
+        break;
+      case "priceDesc":
+        sortStage = { price: -1 };
+        break;
+      case "rating":
+      default:
+        // سنقوم بالترتيب حسب حقل rate الجديد الذي سننشئه
+        sortStage = { rate: -1, createdAt: -1 };
+        break;
     }
-// filter by title
-if (title) filter.title = { $regex: title, $options: 'i' }; //
 
-// filter by stock
-if (minStock || maxStock) {
-  filter.stock = {};
-  if (minStock) filter.stock.$gte = Number(minStock);
-  if (maxStock) filter.stock.$lte = Number(maxStock);
-}
-    // Pagination logic
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // 4. بناء الـ Aggregation Pipeline الكامل
+    const aggregationPipeline = [
+      // المرحلة الأولى: فلترة الكتب حسب author أو category
+      { $match: matchStage },
 
-    const books = await Book.find(filter).skip(skip).limit(parseInt(limit));
-    const total = await Book.countDocuments(filter);
+      // المرحلة الثانية: ربط (join) مع جدول المراجعات (reviews)
+      {
+        $lookup: {
+          from: "reviews", // اسم الـ collection الخاص بالمراجعات (تأكد منه)
+          localField: "reviews",
+          foreignField: "_id",
+          as: "reviewDetails",
+        },
+      },
+
+      // المرحلة الثالثة: إضافة حقل جديد 'rate' يحتوي على متوسط التقييمات
+      {
+        $addFields: {
+          rate: {
+            // استخدم $ifNull للتعامل مع الكتب التي ليس لديها مراجعات (لتجنب القسمة على صفر)
+            $ifNull: [{ $avg: "$reviewDetails.rating" }, 0],
+          },
+        },
+      },
+
+      // المرحلة الرابعة (الأهم): استخدام $facet لتنفيذ الترقيم والعد في نفس الوقت
+      {
+        $facet: {
+          // الفرع الأول: جلب البيانات المرقمة والمرتبة
+          data: [{ $sort: sortStage }, { $skip: skip }, { $limit: limit }],
+          // الفرع الثاني: جلب العدد الإجمالي للكتب بعد الفلترة
+          pagination: [{ $count: "total" }],
+        },
+      },
+    ];
+
+    // 5. تنفيذ الـ Pipeline
+    const results = await Book.aggregate(aggregationPipeline);
+
+    // 6. تجهيز الرد النهائي
+    const books = results[0].data;
+    const total = results[0].pagination[0] ? results[0].pagination[0].total : 0;
+    const pages = Math.ceil(total / limit);
 
     res.status(200).json({
-      message: 'Books retrieved successfully',
+      message: "Books retrieved successfully",
       data: books,
-      pagination: { // Pagination information
-        total,
-        page: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit))
-      }
+      pagination: { total, page, pages },
     });
   } catch (err) {
+    console.error("--- ERROR in getAllBooks (Aggregation) ---", err);
     res.status(500).json({
-      message: 'An error occurred while retrieving books',
-      data: err.message
+      message: "An error occurred while retrieving books",
+      error: err.message,
     });
   }
 };
-
 // Retrieve a single book by ID
 const getBookById = async (req, res) => {
   try {
     const bookId = req.params.id;
 
-    const book = await Book.findById(bookId).populate('reviews'); 
+    const book = await Book.findById(bookId).populate("reviews");
 
     if (!book) {
-      return res.status(404).json({ message: 'Book not found' });
+      return res.status(404).json({ message: "Book not found" });
     }
 
     res.status(200).json({
-      message: 'Book retrieved successfully',
-      data: book
+      message: "Book retrieved successfully",
+      data: book,
     });
   } catch (err) {
     res.status(500).json({
-      message: 'Failed to retrieve book',
-      error: err.message
+      message: "Failed to retrieve book",
+      error: err.message,
     });
   }
 };
@@ -153,21 +181,21 @@ const updateBook = async (req, res) => {
 
     const updatedBook = await Book.findByIdAndUpdate(bookId, updateData, {
       new: true, // return the updated document
-      runValidators: true
+      runValidators: true,
     });
 
     if (!updatedBook) {
-      return res.status(404).json({ message: 'Book not found' });
+      return res.status(404).json({ message: "Book not found" });
     }
 
     res.status(200).json({
-      message: 'Book updated successfully',
-      data: updatedBook
+      message: "Book updated successfully",
+      data: updatedBook,
     });
   } catch (err) {
     res.status(500).json({
-      message: 'Failed to update book',
-      error: err.message
+      message: "Failed to update book",
+      error: err.message,
     });
   }
 };
@@ -180,29 +208,25 @@ const deleteBook = async (req, res) => {
     const deletedBook = await Book.findByIdAndDelete(bookId);
 
     if (!deletedBook) {
-      return res.status(404).json({ message: 'Book not found' });
+      return res.status(404).json({ message: "Book not found" });
     }
 
     res.status(200).json({
-      message: 'Book deleted successfully',
-      data: deletedBook
+      message: "Book deleted successfully",
+      data: deletedBook,
     });
   } catch (err) {
     res.status(500).json({
-      message: 'Failed to delete book',
-      error: err.message
+      message: "Failed to delete book",
+      error: err.message,
     });
   }
 };
 
-
-
 module.exports = {
-    uploadBook,
-    getAllBooks,
-    getBookById,
-    updateBook,
-    deleteBook
-
+  uploadBook,
+  getAllBooks,
+  getBookById,
+  updateBook,
+  deleteBook,
 };
-
