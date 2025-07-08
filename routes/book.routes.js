@@ -30,7 +30,7 @@ router.post(
 //  Get All Books 
 //get /api/book
 router.get(
-  '/', 
+  '/',
   authMiddleware,
   getBooksValidator,
   validate,
@@ -41,7 +41,7 @@ router.get(
 //get /api/book/:id
 router.get(
     '/:id',
-    authMiddleware,
+    // authMiddleware,
     param('id').isMongoId().withMessage('Invalid book ID'),
     validate,
     bookController.getBookById

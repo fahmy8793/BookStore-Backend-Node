@@ -27,14 +27,19 @@ const userSchema = new mongoose.Schema(
             enum: ['user', 'admin'],
             default: 'user'
         },
+        // budget: {
+        //     type: Number,
+        //     // default: 1000,
+        //     min: 0
+        // },
+        purchasedBooks: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Book'
+        }],
         orders: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Order',
             default: []
-        }],
-        purchasedBooks: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Book'
         }],
         paypalTransactions: [String],
         paypalPayments: [{
@@ -47,6 +52,27 @@ const userSchema = new mongoose.Schema(
             code: String,
             expiresAt: Date
         },
+        cart: [
+            {
+                book: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Book",
+                    required: true,
+                },
+                quantity: {
+                    type: Number,
+                    required: true,
+                    default: 1,
+                },
+            },
+        ],
+        wishlist: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Book",
+                required: true,
+            },
+        ],
         resetPasswordToken: {
             type: String
         },
@@ -62,6 +88,8 @@ const userSchema = new mongoose.Schema(
 userSchema.methods.comparePassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 }
+
+
 // Virtual populate for user.orders
 userSchema.virtual('ordersVirtual', {
     ref: 'Order',
