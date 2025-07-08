@@ -65,7 +65,7 @@ const uploadBook = async (req, res) => {
 // Retrieve all books with optional filtering and pagination
 const getAllBooks = async (req, res) => {
   try {
-    const { author, category, sort = "rating" } = req.query;
+    const { author, category, sort = "rating", searchQuery } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
@@ -75,6 +75,13 @@ const getAllBooks = async (req, res) => {
     if (author) matchStage.author = { $regex: author, $options: "i" };
     if (category) matchStage.category = { $regex: category, $options: "i" };
 
+    //search
+    if (searchQuery) {
+      matchStage.$or = [
+        { title: { $regex: searchQuery, $options: "i" } },
+        { author: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
     //sort staus
     let sortStage = {};
     switch (sort) {
