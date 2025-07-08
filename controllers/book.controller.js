@@ -65,18 +65,17 @@ const uploadBook = async (req, res) => {
 // Retrieve all books with optional filtering and pagination
 const getAllBooks = async (req, res) => {
   try {
-    // 1. استخلاص كل الخيارات من الطلب مع قيم افتراضية
     const { author, category, sort = "rating" } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    // 2. بناء مرحلة الفلترة ($match)
+    //fitler
     const matchStage = {};
     if (author) matchStage.author = { $regex: author, $options: "i" };
     if (category) matchStage.category = { $regex: category, $options: "i" };
 
-    // 3. بناء مرحلة الترتيب ($sort)
+    //sort staus
     let sortStage = {};
     switch (sort) {
       case "priceAsc":
@@ -87,51 +86,42 @@ const getAllBooks = async (req, res) => {
         break;
       case "rating":
       default:
-        // سنقوم بالترتيب حسب حقل rate الجديد الذي سننشئه
         sortStage = { rate: -1, createdAt: -1 };
         break;
     }
 
-    // 4. بناء الـ Aggregation Pipeline الكامل
+    // aggregation
     const aggregationPipeline = [
-      // المرحلة الأولى: فلترة الكتب حسب author أو category
+      //category
       { $match: matchStage },
 
-      // المرحلة الثانية: ربط (join) مع جدول المراجعات (reviews)
       {
         $lookup: {
-          from: "reviews", // اسم الـ collection الخاص بالمراجعات (تأكد منه)
+          from: "reviews",
           localField: "reviews",
           foreignField: "_id",
           as: "reviewDetails",
         },
       },
 
-      // المرحلة الثالثة: إضافة حقل جديد 'rate' يحتوي على متوسط التقييمات
       {
         $addFields: {
           rate: {
-            // استخدم $ifNull للتعامل مع الكتب التي ليس لديها مراجعات (لتجنب القسمة على صفر)
             $ifNull: [{ $avg: "$reviewDetails.rating" }, 0],
           },
         },
       },
 
-      // المرحلة الرابعة (الأهم): استخدام $facet لتنفيذ الترقيم والعد في نفس الوقت
       {
         $facet: {
-          // الفرع الأول: جلب البيانات المرقمة والمرتبة
           data: [{ $sort: sortStage }, { $skip: skip }, { $limit: limit }],
-          // الفرع الثاني: جلب العدد الإجمالي للكتب بعد الفلترة
           pagination: [{ $count: "total" }],
         },
       },
     ];
 
-    // 5. تنفيذ الـ Pipeline
     const results = await Book.aggregate(aggregationPipeline);
 
-    // 6. تجهيز الرد النهائي
     const books = results[0].data;
     const total = results[0].pagination[0] ? results[0].pagination[0].total : 0;
     const pages = Math.ceil(total / limit);
