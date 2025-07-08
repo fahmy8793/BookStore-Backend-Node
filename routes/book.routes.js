@@ -30,7 +30,7 @@ router.post(
 //  Get All Books 
 //get /api/book
 router.get(
-  '/',
+  '/', 
   authMiddleware,
   getBooksValidator,
   validate,

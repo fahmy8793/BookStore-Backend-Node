@@ -11,9 +11,9 @@ const checkoutOrder = async(req, res) => {
         const { books, total } = req.body;
         
         const user = await User.findById(userId).session(session);
-        console.log('User ID:', userId);
-        console.log('Books:', books);
-        console.log('total:', total);
+        // console.log('User ID:', userId);
+        // console.log('Books:', books);
+        // console.log('total:', total);
         if(!user) {
             throw new Error('User not found');
         }
@@ -33,35 +33,25 @@ const checkoutOrder = async(req, res) => {
             await book.save({ session });
 
             calculatedTotal += book.price * item.quantity;
-
+            orderBooks.push({
+                book: item.book,
+                quantity: item.quantity
+            });
         }
-
-        if(calculatedTotal !== total) {
-            throw new Error('Total amount does not match the calculated total');
+        if (Math.round(calculatedTotal * 100) !== Math.round(total * 100)) {
+            throw new Error('Total amount mismatch');
         }
-
-        if(user.balance < total) {
-            throw new Error('Insufficient balance');
-        }
-
-        user.balance -= total;
-        await user.save({ session });
-
-        const orderBooks = books.map(item => ({
-            book: item.book,
-            quantity: item.quantity
-        }));
-
         const newOrder = new Order({
             user: userId,
             books: orderBooks,
-            total: total
+            total: calculatedTotal
         });
-
-        await newOrder.save({ session});
+        await newOrder.save({ session });
 
         await session.commitTransaction();
         session.endSession();
+
+        
         res.status(201).json({
             message: 'Order placed sussessfully',
             order: newOrder

@@ -31,9 +31,14 @@ app.use('/api/user', userRoutes);
 const bookRoutes = require('./routes/book.routes')
 app.use('/api/book', bookRoutes);
 
+// checkout using paypal
+const paypalRoutes = require('./routes/paypal.routes');
+app.use('/api/paypal', paypalRoutes);
+
 // order routes
 const orderRoutes = require('./routes/order.routes');
 app.use('/api/order', orderRoutes);
+
 
 // admin routes
 const adminRoutes = require('./routes/admin.routes');

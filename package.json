@@ -12,6 +12,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "@paypal/paypal-server-sdk": "^1.1.0",
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^1.41.3",
