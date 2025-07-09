@@ -18,6 +18,10 @@ const addToCart = async (req, res) => {
     const userId = req.user.id;
     const { bookId, quantity } = req.body;
 
+    if (!bookId || !quantity || quantity < 1) {
+      return res.status(400).json({ message: "Invalid bookId or quantity" });
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -34,6 +38,7 @@ const addToCart = async (req, res) => {
     }
 
     await user.save();
+    await user.populate("cart.book");
     res
       .status(200)
       .json({ message: "Book added to cart successfully", data: user.cart });
