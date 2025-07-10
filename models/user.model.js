@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: [true, 'Email is required'],
             unique: true,
+            index:true,
             lowercase: true,
             match: [/.+\@.+\..+/, 'Invalid email format']
         },
@@ -41,7 +42,7 @@ const userSchema = new mongoose.Schema(
             ref: 'Order',
             default: []
         }],
-        paypalTransactions: [String],
+        // paypalTransactions: [String],
         paypalPayments: [{
             orderId: String,
             status: String,

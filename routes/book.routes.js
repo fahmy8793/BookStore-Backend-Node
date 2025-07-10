@@ -31,7 +31,7 @@ router.post(
 //get /api/book
 router.get(
   '/',
-  authMiddleware,
+  // authMiddleware,
   getBooksValidator,
   validate,
   bookController.getAllBooks

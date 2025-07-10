@@ -18,13 +18,13 @@ const orderSchema = new mongoose.Schema({
                 required: true,
                 min: 1
             }
-    }
+        }
     ],
     total: {
         type: Number,
         required: true,
         min: 0
-    }
-});
+    },
+}, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);
