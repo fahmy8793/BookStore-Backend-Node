@@ -5,26 +5,56 @@ const Order = require('../models/order.model');
 const User = require('../models/user.model');
 
 const createPaypalOrder = async (req, res) => {
-    const { total } = req.body;
+    const { total, books } = req.body;
+    if (!total || !Array.isArray(books)) {
+        return res.status(400).json({ message: "Total or books missing" });
+    }
 
-    const request = new paypal.orders.OrdersCreateRequest();
-    request.prefer("return=representation");
-    request.requestBody({
-        intent: "CAPTURE",
-        purchase_units: [
-            {
-                amount: {
-                    currency_code: "USD",
-                    value: total.toString()
-                },
-            },
-        ],
-        application_context: {
-            return_url: "http://localhost:4200/success",  // FRONTEND redirect on success
-            cancel_url: "http://localhost:4200/cancel"    // FRONTEND redirect on cancel
-        }
-    });
     try {
+        const stockIssues = [];
+
+        for (const item of books) {
+            const book = await Book.findById(item.book);
+            if (!book) {
+                return res.status(404).json({ message: `Book not found` });
+            }
+
+            if (book.stock < item.quantity) {
+                stockIssues.push({
+                    title: book.title,
+                    available: book.stock,
+                    requested: item.quantity
+                });
+            }
+        }
+
+        // ✅ لو في مشاكل ستوك
+        if (stockIssues.length > 0) {
+            return res.status(200).json({
+                stockError: true,
+                issues: stockIssues
+            });
+        }
+
+        // ✅ الطلب عادي لو مفيش مشاكل
+        const request = new paypal.orders.OrdersCreateRequest();
+        request.prefer("return=representation");
+        request.requestBody({
+            intent: "CAPTURE",
+            purchase_units: [
+                {
+                    amount: {
+                        currency_code: "USD",
+                        value: total.toString()
+                    },
+                },
+            ],
+            application_context: {
+                return_url: "http://localhost:4200/success",
+                cancel_url: "http://localhost:4200/cancel"
+            }
+        });
+
         const order = await client.execute(request);
         const approvalUrl = order.result.links.find(link => link.rel === "approve").href;
 
@@ -32,13 +62,15 @@ const createPaypalOrder = async (req, res) => {
             id: order.result.id,
             approvalUrl
         });
+
     } catch (err) {
         res.status(500).json({
             message: "Error creating PayPal order",
             error: err.message
         });
     }
-}
+};
+
 
 const capturePayPalOrder = async (req, res) => {
     const { orderID, books, total } = req.body;
@@ -92,6 +124,7 @@ const capturePayPalOrder = async (req, res) => {
                 user.purchasedBooks.push(item.book);
             }
         });
+
         user.paypalPayments.push({
             orderId: orderID,
             status: capture.result.status,
@@ -99,6 +132,8 @@ const capturePayPalOrder = async (req, res) => {
             date: new Date()
         });
         await user.save();
+        // clean the cart 
+        await User.findByIdAndUpdate(userId, { $set: { cart: [] } });
         // the response
         res.status(200).json({
             message: 'Order captured and saved successfully',

@@ -14,6 +14,9 @@ router.post("/add", authMiddleware, cartController.addToCart);
 // DELETE /api/cart/remove/:bookId ->
 router.delete("/remove/:bookId", authMiddleware, cartController.removeFromCart);
 
+// DELETE /api/cart/clear ->
+router.delete('/clear', authMiddleware, cartController.clearCart);
+
 router.put("/update", authMiddleware, cartController.updateItemQuantity);
 
 module.exports = router;
