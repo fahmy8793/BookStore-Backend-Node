@@ -2,7 +2,7 @@ const axios = require('axios');
 const Book = require('../models/book.model');
 const { readPdfFromUrl, readEpubFromUrl } = require('../utils/readers');
 
-// تقسيم النص إلى أجزاء صغيرة للطُلب من Cohere
+// split text 
 function splitTextIntoChunks(text, maxLength = 3000) {
   const paragraphs = text.split(/\n+/);
   const chunks = [];
@@ -24,13 +24,13 @@ function splitTextIntoChunks(text, maxLength = 3000) {
   return chunks;
 }
 
-// استدعاء API التلخيص من Cohere
+// use cohere to summarize
 const summarizeTextWithCohere = async (text) => {
   const res = await axios.post(
     'https://api.cohere.ai/v1/summarize',
     {
       text,
-      length: 'medium', // خليها medium عشان ميبقاش التلخيص طويل أوي
+      length: 'medium',
       format: 'paragraph',
       model: 'command'
     },
@@ -45,7 +45,6 @@ const summarizeTextWithCohere = async (text) => {
   return res.data.summary;
 };
 
-// الدالة الرئيسية: تلخيص الكتاب
 const summarizeBook = async (req, res) => {
   try {
     const book = await Book.findById(req.params.bookId);
@@ -67,8 +66,8 @@ const summarizeBook = async (req, res) => {
     if (!textContent || textContent.trim().length < 250) {
       return res.status(400).json({ error: 'Book content is too short or unreadable to summarize.' });
     }
-
-    // 🟡 ناخد أول 50% بس من الكتاب
+    
+//take 50% of the book
     const halfTextLength = Math.floor(textContent.length * 0.5);
     const partialText = textContent.slice(0, halfTextLength);
 

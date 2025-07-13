@@ -2,6 +2,7 @@ const fs = require("fs");
 const Book = require("../models/book.model");
 const { validationResult } = require("express-validator");
 const cloudinary = require("../config/cloudinary");
+const generateBookDescription = require('../services/aiDescription.service');
 const Review = require("../models/review.model");
 
 // Upload a new book with PDF and image files
@@ -13,7 +14,11 @@ const uploadBook = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, author, description, category, price, stock } = req.body;
+    const { title, author, description: userDescription, category, price, stock } = req.body;
+
+    const description = userDescription?.trim()
+  ? userDescription
+  : await generateBookDescription(title, author);
 
     // check if required fields are present
     let pdfUploadResult = null;

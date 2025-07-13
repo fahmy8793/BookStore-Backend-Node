@@ -17,7 +17,7 @@ const bookController = require('../controllers/book.controller');
 router.post(
   '/upload',
   authMiddleware,
-  isAdmin,
+ // isAdmin,
   upload.fields([
     { name: 'pdf', maxCount: 1 },
     { name: 'image', maxCount: 1 }

@@ -6,7 +6,7 @@ const createBookValidator = [
   body('author').notEmpty().withMessage('Author is required'),
   body('price').isNumeric().withMessage('Price must be a number'),
   body('stock').isInt({ min: 0 }).withMessage('Stock must be 0 or more'),
-  body('description').isLength({ min: 10 }).withMessage('Description too short'),
+  //body('description').isLength({ min: 10 }).withMessage('Description too short'),
   body('category').notEmpty().withMessage('Category is required'),
 ];
 
