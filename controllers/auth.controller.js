@@ -3,13 +3,14 @@ const bcrypt = require("bcryptjs");
 const generateTokken = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-
-// register function
+// register and send OTP function
 const register = async (req, res) => {
     const { name, email, password } = req.body;
     try {
-        // at first : check if user already exists or not
+        // check if user already exists or not
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json(
@@ -21,22 +22,31 @@ const register = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // create new user
+        // Generate OTP
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+        // create new user with OTP
         const user = await User.create({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            otp: {
+                code: otpCode,
+                expiresAt: otpExpire
+            },
+            isVerified: false
         });
 
-        // generate token
-        const token = generateTokken(user._id);
-
+        // Send OTP to email
+        await sendEmail(
+            email,
+            "Verify Your Account",
+            `<p>Your verification OTP is <b>${otpCode}</b></p>`
+        );
         // the response
         res.status(201).json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            token
+            message: "Registered successfully. Please verify your email using the OTP sent.",
         });
 
     } catch (err) {
@@ -46,8 +56,44 @@ const register = async (req, res) => {
         });
     };
 }
-// end register function
+// end register and send OTP function
 
+// verify OTP for registration
+const verifyRegisterOTP = async (req, res) => {
+    const { email, otpCode } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        // Check if user exists and has an OTP
+        if (!user || !user.otp || !user.otp.code) {
+            return res.status(400).json({ message: "No OTP found for this email" });
+        }
+        // Check if user is already verified
+        if (user.isVerified) {
+            return res.status(400).json({ message: "User already verified" });
+        }
+
+        // Check if OTP is valid
+        if (user.otp.expiresAt < Date.now()) {
+            return res.status(400).json({ message: "OTP has expired" });
+        }
+        // Check if OTP matches
+        if (user.otp.code !== otpCode) {
+            return res.status(400).json({ message: "Invalid OTP code" });
+        }
+
+        // Mark user as verified
+        user.isVerified = true;
+        user.otp = undefined;
+        await user.save();
+
+        res.status(200).json({ message: "Email verified successfully. You can now log in." });
+
+    } catch (err) {
+        res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
+// end verifyRegisterOTP function
 
 // login function
 const login = async (req, res) => {
@@ -59,10 +105,15 @@ const login = async (req, res) => {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
+        // Check if email is verified
+        if (!user.isVerified) {
+            return res.status(403).json({ message: "Please verify your email before logging in." });
+        }
+
         // if email is already exists , compare the password that user type with the password in db
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            return res.status(400).json({ message: "Invalid credentials" });
+            return res.status(400).json({ message: "Invalid Email or Password" });
         }
 
         // generate token
@@ -93,6 +144,31 @@ const sendOTP = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
+        // block the user from sending OTP
+        if (user.otpBlockedUntil && user.otpBlockedUntil > new Date()) {
+            return res.status(429).json({
+                message: `You have been temporarily blocked from requesting OTP. Try again later.`
+            });
+        }
+        // block the user from sending OTP for 10 minutes
+        if (user.otpLastSentAt && Date.now() - user.otpLastSentAt.getTime() < 10 * 60 * 1000) {
+            return res.status(429).json({
+                message: `Please wait 10 minutes before requesting a new OTP.`
+            });
+        }
+        // Reset counter if last request > 24h
+        if (user.otpLastSentAt && Date.now() - user.otpLastSentAt.getTime() > 24 * 60 * 60 * 1000) {
+            user.otpRequestCount = 0;
+        }
+        // allow only 3 requests in 1 hour
+        if (user.otpRequestCount >= 3) {
+            user.otpBlockedUntil = new Date(Date.now() + 60 * 60 * 1000); // Block 1 hour
+            await user.save();
+            return res.status(429).json({
+                message: "You have reached the OTP request limit. Try again in 1 hour."
+            });
+        }
+
         // generate OTP
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -118,7 +194,7 @@ const sendOTP = async (req, res) => {
 }
 // end sending OTP
 
-// verify OTP
+// verify OTP for reset password
 const verifyOTP = async (req, res) => {
     const { email, otpCode } = req.body;
     try {
@@ -135,6 +211,7 @@ const verifyOTP = async (req, res) => {
         if (user.otp.code !== otpCode) {
             return res.status(400).json({ message: "Invalid OTP code" });
         }
+
         // if every thing is good =>then 
         const resetToken = jwt.sign(
             { id: user._id },
@@ -145,6 +222,9 @@ const verifyOTP = async (req, res) => {
         user.resetPasswordToken = resetToken;
         user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
         user.otp = undefined; // delete otp
+        user.otpRequestCount = 0;
+        user.otpLastSentAt = undefined;
+        user.otpBlockedUntil = undefined;
         await user.save();
         // respons
         res.status(200).json({
@@ -184,11 +264,66 @@ const resetPassword = async (req, res) => {
     } catch (err) {
         res.status(500).json({
             message: "server error",
-            error:err.message
-         });
+            error: err.message
+        });
     }
 }
 // end reset password
 
+// login with Google
+const googleLogin = async (req, res) => {
+    const { tokenId } = req.body;
 
-module.exports = { register, login, sendOTP, verifyOTP,resetPassword };
+    try {
+        // Verify the token with Google
+        const ticket = await client.verifyIdToken({
+            idToken: tokenId,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        // Get the user info from the token
+        const { email, name, picture } = ticket.getPayload();
+        // check if user already exists
+        const existingUser = await User.findOne({ email });
+
+        // if user exists and is not a Google user, return an error
+        if (existingUser && !existingUser.isGoogleUser) {
+            return res.status(400).json({
+                message: "Email already registered with password. Please login manually.",
+            });
+        }
+
+        let user;
+
+        // if user does not exist, create a new one
+        if (!existingUser) {
+            user = await User.create({
+                name,
+                email,
+                isVerified: true,
+                isGoogleUser: true,
+                googleProfilePic: picture,
+            });
+        } else {
+            // google user already exists
+            user = existingUser;
+        }
+
+        const token = generateToken(user._id);
+
+        res.status(200).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            token,
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: "Google login failed",
+            error: err.message,
+        });
+    }
+};
+// end login with Google
+
+
+module.exports = { register, verifyRegisterOTP, login, sendOTP, verifyOTP, resetPassword, googleLogin };

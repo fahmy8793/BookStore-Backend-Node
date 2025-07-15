@@ -19,20 +19,28 @@ const userSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: [true, 'Password is required'],
+            required: function () {
+                return !this.isGoogleUser; // Password is required only if not using Google login
+            },
             minlength: 6,
             select: false // dont return it when using find or find all
+        },
+        isGoogleUser: {
+            type: Boolean,
+            default: false
+        },
+        googleProfilePic: {
+            type: String
+        },
+        isVerified: {
+            type: Boolean,
+            default: false
         },
         role: {
             type: String,
             enum: ['user', 'admin'],
             default: 'user'
         },
-        // budget: {
-        //     type: Number,
-        //     // default: 1000,
-        //     min: 0
-        // },
         purchasedBooks: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Book'
@@ -52,6 +60,16 @@ const userSchema = new mongoose.Schema(
         otp: {
             code: String,
             expiresAt: Date
+        },
+        otpRequestCount: {
+            type: Number,
+            default: 0
+        },
+        otpLastSentAt: {
+            type: Date
+        },
+        otpBlockedUntil: {
+            type: Date // Optional: تستخدمه لو عايز تعمل Block بعد عدد محاولات فاشلة
         },
         cart: [
             {
