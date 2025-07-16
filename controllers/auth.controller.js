@@ -5,6 +5,7 @@ const sendEmail = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const PendingUser = require('../models/pendingUser.model');
 
 // register and send OTP function
 const register = async (req, res) => {
@@ -17,32 +18,35 @@ const register = async (req, res) => {
                 { message: "User already exists" }
             );
         }
+        // check if there is a pending user with the same email
+        const pendingExists = await PendingUser.findOne({ email });
+        if (pendingExists) {
+            return res.status(400).json({ message: 'Please verify the OTP sent to your email' });
+        }
 
         // hash paasword (save the password hashed)
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         // Generate OTP
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
         // create new user with OTP
-        const user = await User.create({
+        await PendingUser.create({
             name,
             email,
             password: hashedPassword,
             otp: {
                 code: otpCode,
                 expiresAt: otpExpire
-            },
-            isVerified: false
+            }
         });
 
         // Send OTP to email
         await sendEmail(
             email,
-            "Verify Your Account",
-            `<p>Your verification OTP is <b>${otpCode}</b></p>`
+            'Verify Your Account',
+            `<p>Your OTP code is <b>${otpCode}</b>. It expires in 10 minutes.</p>`
         );
         // the response
         res.status(201).json({
@@ -63,30 +67,29 @@ const verifyRegisterOTP = async (req, res) => {
     const { email, otpCode } = req.body;
 
     try {
-        const user = await User.findOne({ email });
-        // Check if user exists and has an OTP
-        if (!user || !user.otp || !user.otp.code) {
-            return res.status(400).json({ message: "No OTP found for this email" });
+        const pendingUser = await PendingUser.findOne({ email });
+        // Check if pending user exists
+        if (!pendingUser) {
+            return res.status(400).json({ message: 'No pending registration found' });
         }
-        // Check if user is already verified
-        if (user.isVerified) {
-            return res.status(400).json({ message: "User already verified" });
-        }
-
-        // Check if OTP is valid
-        if (user.otp.expiresAt < Date.now()) {
-            return res.status(400).json({ message: "OTP has expired" });
+        // Check if OTP is expired
+        if (pendingUser.otp.expiresAt < Date.now()) {
+            await PendingUser.deleteOne({ email });
+            return res.status(400).json({ message: 'OTP has expired' });
         }
         // Check if OTP matches
-        if (user.otp.code !== otpCode) {
-            return res.status(400).json({ message: "Invalid OTP code" });
+        if (pendingUser.otp.code !== otpCode) {
+            return res.status(400).json({ message: 'Invalid OTP code' });
         }
-
-        // Mark user as verified
-        user.isVerified = true;
-        user.otp = undefined;
-        await user.save();
-
+        // create real user
+        const newUser = await User.create({
+            name: pendingUser.name,
+            email: pendingUser.email,
+            password: pendingUser.password,
+            isVerified: true
+        });
+        // delete the pending user
+        await PendingUser.deleteOne({ email });
         res.status(200).json({ message: "Email verified successfully. You can now log in." });
 
     } catch (err) {
