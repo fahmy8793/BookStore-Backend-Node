@@ -276,7 +276,6 @@ const resetPassword = async (req, res) => {
 // login with Google
 const googleLogin = async (req, res) => {
     const { tokenId } = req.body;
-
     try {
         // Verify the token with Google
         const ticket = await client.verifyIdToken({
@@ -311,7 +310,7 @@ const googleLogin = async (req, res) => {
             user = existingUser;
         }
 
-        const token = generateToken(user._id);
+        const token = generateTokken(user._id);
 
         res.status(200).json({
             _id: user._id,
