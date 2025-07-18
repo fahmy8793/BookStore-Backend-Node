@@ -225,7 +225,7 @@ const deleteBook = async (req, res) => {
   }
 };
 
-module.exports = {
+module.exports = { 
   uploadBook,
   getAllBooks,
   getBookById,

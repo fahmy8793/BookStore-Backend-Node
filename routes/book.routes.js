@@ -11,20 +11,22 @@ const isAdmin = require('../middlewares/isAdmin');
 const validate = require('../middlewares/validate');
 const { createBookValidator, getBooksValidator } = require('../validators/book.validators');
 const bookController = require('../controllers/book.controller');
+const { createReview } = require("../controllers/review.controller");
+
 
 //  Create Book with upload pdf + image
 //post /api/book/upload
 router.post(
   '/upload',
   authMiddleware,
- // isAdmin,
+  // isAdmin,
   upload.fields([
     { name: 'pdf', maxCount: 1 },
     { name: 'image', maxCount: 1 }
   ]),
   createBookValidator,
   validate,
-  bookController.uploadBook  
+  bookController.uploadBook
 );
 
 //  Get All Books 
@@ -40,20 +42,23 @@ router.get(
 //  Get Book By Id
 //get /api/book/:id
 router.get(
-    '/:id',
-    // authMiddleware,
-    param('id').isMongoId().withMessage('Invalid book ID'),
-    validate,
-    bookController.getBookById
+  '/:id',
+  // authMiddleware,
+  param('id').isMongoId().withMessage('Invalid book ID'),
+  validate,
+  bookController.getBookById
 );
 
 //  Update Book
-//put /api/book/:id
-router.patch('/:id', authMiddleware, isAdmin,validate, bookController.updateBook);
+//put /api/book/:id 
+router.patch('/:id', authMiddleware, isAdmin, validate, bookController.updateBook);
 
 //  Delete Book
 //delete /api/book/:id
-router.delete('/:id', authMiddleware, isAdmin,validate, bookController.deleteBook);
+router.delete('/:id', authMiddleware, isAdmin, validate, bookController.deleteBook);
+
+// Create Review for a Book
+router.post("/:id/reviews", authMiddleware, createReview);
 
 
 module.exports = router;

@@ -8,6 +8,6 @@ router.post('/books/:id/reviews', authMiddleware, createReview);
 
 router.put('/reviews/:id', authMiddleware, updateReview);
 
-router.delete('reviews/:id', authMiddleware, deleteReview);
+router.delete('/reviews/:id', authMiddleware, deleteReview);
 
 export default router;

@@ -1,21 +1,21 @@
-const Order = require('../models/order.model');
-const Review = require('../models/review.model');
-const Book = require('../models/book.model');
+const Order = require("../models/order.model");
+const Review = require("../models/review.model");
+const Book = require("../models/book.model");
 
-export const createReview = async(req, res) => {
-    try{
+const createReview = async (req, res) => {
+    try {
         const bookId = req.params.id;
         const userId = req.user.id;
         const { rating, comment } = req.body;
 
         const boughtBook = await Order.findOne({
             user: userId,
-            'books.book': bookId
+            "books.book": bookId,
         });
 
-        if(!boughtBook) {
+        if (!boughtBook) {
             return res.status(403).json({
-                message: 'You can only review books you have purchased'
+                message: "You can only review books you have purchased",
             });
         }
 
@@ -23,88 +23,98 @@ export const createReview = async(req, res) => {
             user: userId,
             book: bookId,
             rating,
-            comment
+            comment,
         });
 
+        await newReview.save();
+
         await Book.findByIdAndUpdate(bookId, {
-            $push: {reviews: newReview._id}
+            $push: { reviews: newReview._id },
         });
 
         res.status(201).json({
-            message: 'Review created successfully',
-            data: newReview
+            message: "Review created successfully",
+            data: newReview,
         });
-    } catch(err) {
+    } catch (err) {
+        console.error("CREATE REVIEW ERROR:", err);
         res.status(500).json({
-            message: 'An error occurred while creating the review',
-            data: err.message
+            message: "An error occurred while creating the review",
+            error: err.message,
         });
     }
-}
+};
 
-export const updateReview = async(req, res) => {
-    try{
+const updateReview = async (req, res) => {
+    try {
         const reviewId = req.params.id;
-        const review = await Review.findById({ reviewId });
 
-        if(!review) {
+        const review = await Review.findById(reviewId);
+
+        if (!review) {
             return res.status(404).json({
-                message: 'Review not found'
+                message: "Review not found",
             });
         }
 
-        if(review.user.toString() !== req.user.id) {
+        if (review.user.toString() !== req.user.id) {
             return res.status(403).json({
-                message: 'You do not have permission to update this review'
+                message: "You do not have permission to update this review",
             });
         }
 
         review.rating = req.body.rating || review.rating;
-        review.comment= req.body.comment || review.comment;
+        review.comment = req.body.comment || review.comment;
 
         await review.save();
 
         res.status(200).json({
-            message: 'Review updated successfully',
-            data: review
+            message: "Review updated successfully",
+            data: review,
         });
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({
-            message: 'An error occurred while updating the review',
-            data: err.message
+            message: "An error occurred while updating the review",
+            data: err.message,
         });
     }
-}
+};
 
-export const deletReview = async(req, res) => {
+const deleteReview = async (req, res) => {
     try {
         const reviewId = req.params.id;
         const review = await Review.findById(reviewId);
 
-        if(!review) {
+        if (!review) {
             return res.status(404).json({
-                message: 'Review not found'
+                message: "Review not found",
             });
         }
 
-        if(review.user.toString() !== req.user.id) {
+        if (review.user.toString() !== req.user.id) {
             return res.status(403).json({
-                message: 'You do not have permission to delete this review'
+                message: "You do not have permission to delete this review",
             });
         }
 
         await Book.findByIdAndUpdate(review.book, {
-            $pull: { reviews: review._id }
+            $pull: { reviews: review._id },
         });
 
         await review.deleteOne();
         res.status(200).json({
-            message: 'Review deleted successfully'
-        })
-    } catch(err) {
+            message: "Review deleted successfully",
+        });
+    } catch (err) {
         res.status(500).json({
-            message: 'An error occurred while deleting the review',
-            data: err.message
+            message: "An error occurred while deleting the review",
+            data: err.message,
         });
     }
-}
+};
+
+module.exports = {
+    createReview,
+    updateReview,
+    deleteReview,
+};
