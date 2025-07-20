@@ -31,6 +31,7 @@ connectDB();
 io.on("connection", (socket) => {
   console.log("🔌 Admin connected: ", socket.id);
 
+
   socket.on("disconnect", () => {
     console.log("❌ Admin disconnected:", socket.id);
   });
@@ -51,8 +52,45 @@ app.use("/api/admin", require("./routes/admin.routes"));
 app.use("/api/cart", require("./routes/cart.routes"));
 app.use("/api/wishlist", require("./routes/wishlist.routes"));
 
-//////////////////// SERVER START ////////////////////
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
+
+
+// user routes
+const userRoutes = require("./routes/user.routes");
+app.use("/api/users", userRoutes);
+
+// book routes
+const bookRoutes = require("./routes/book.routes");
+app.use("/api/book", bookRoutes);
+
+// book summarize route
+//
+const summarizeRoute = require("./routes/summarize.routes");
+app.use("/api/book", summarizeRoute);
+
+// checkout using paypal
+const paypalRoutes = require("./routes/paypal.routes");
+app.use("/api/paypal", paypalRoutes);
+
+// order routes
+const orderRoutes = require("./routes/order.routes");
+app.use("/api/order", orderRoutes);
+
+// admin routes
+const adminRoutes = require("./routes/admin.routes");
+app.use("/api/admin", adminRoutes);
+
+//cart routes
+const cartRoutes = require("./routes/cart.routes");
+app.use("/api/cart", cartRoutes);
+
+// wishlist routes
+const wishlistRoutes = require("./routes/wishlist.routes.js");
+app.use("/api/wishlist", wishlistRoutes);
+
+// start server
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT} `);
+
 });
+

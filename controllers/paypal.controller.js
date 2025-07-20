@@ -50,8 +50,8 @@ const createPaypalOrder = async (req, res) => {
                 },
             ],
             application_context: {
-                return_url: "http://localhost:4200/success",
-                cancel_url: "http://localhost:4200/cancel"
+                return_url: "http://localhost:4200/checkout",
+                cancel_url: "http://localhost:4200/checkout?cancel=true"
             }
         });
 
