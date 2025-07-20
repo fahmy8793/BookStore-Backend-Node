@@ -22,7 +22,7 @@ app.use("/api/auth", authRoutes);
 
 // user routes
 const userRoutes = require("./routes/user.routes");
-app.use("/api/user", userRoutes);
+app.use("/api/users", userRoutes);
 
 // book routes
 const bookRoutes = require("./routes/book.routes");
@@ -30,17 +30,16 @@ app.use("/api/book", bookRoutes);
 
 // book summarize route
 //
-const summarizeRoute = require('./routes/summarize.routes');
-app.use('/api/book', summarizeRoute); 
+const summarizeRoute = require("./routes/summarize.routes");
+app.use("/api/book", summarizeRoute);
 
 // checkout using paypal
-const paypalRoutes = require('./routes/paypal.routes');
-app.use('/api/paypal', paypalRoutes);
+const paypalRoutes = require("./routes/paypal.routes");
+app.use("/api/paypal", paypalRoutes);
 
 // order routes
 const orderRoutes = require("./routes/order.routes");
 app.use("/api/order", orderRoutes);
-
 
 // admin routes
 const adminRoutes = require("./routes/admin.routes");
@@ -55,7 +54,7 @@ const wishlistRoutes = require("./routes/wishlist.routes.js");
 app.use("/api/wishlist", wishlistRoutes);
 
 // start server
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT} `);
 });
