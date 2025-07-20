@@ -134,6 +134,16 @@ const capturePayPalOrder = async (req, res) => {
         await user.save();
         // clean the cart 
         await User.findByIdAndUpdate(userId, { $set: { cart: [] } });
+
+        // إرسال إشعار إلى الأدمن عبر WebSocket
+        const io = req.app.locals.io;
+        io.emit("new-order", {
+        message: "✅ New order placed!",
+        orderId: order._id,
+        customer: order.userId,
+        total: order.totalPrice,
+        });
+
         // the response
         res.status(200).json({
             message: 'Order captured and saved successfully',
