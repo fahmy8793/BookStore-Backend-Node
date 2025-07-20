@@ -37,19 +37,19 @@ const createReview = async (req, res) => {
             data: newReview,
         });
     } catch (err) {
-        console.error("CREATE REVIEW ERROR:", err);
+        console.error("CREATE REVIEW ERROR:", err); // Log the actual error
         res.status(500).json({
             message: "An error occurred while creating the review",
-            error: err.message,
+            error: err.message, // Send the error message for better debugging
         });
     }
 };
 
+
 const updateReview = async (req, res) => {
     try {
         const reviewId = req.params.id;
-
-        const review = await Review.findById(reviewId);
+        const review = await Review.findById(reviewId); // Corrected: findById takes the ID directly
 
         if (!review) {
             return res.status(404).json({
@@ -80,7 +80,9 @@ const updateReview = async (req, res) => {
     }
 };
 
+
 const deleteReview = async (req, res) => {
+    // Fixed typo from "deletReview"
     try {
         const reviewId = req.params.id;
         const review = await Review.findById(reviewId);
@@ -112,6 +114,7 @@ const deleteReview = async (req, res) => {
         });
     }
 };
+
 
 module.exports = {
     createReview,

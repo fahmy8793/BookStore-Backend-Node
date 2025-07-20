@@ -14,4 +14,8 @@ router.put('/update/profile', authMiddleware, updateProfile);
 // update user password => if he know it and want to change it
 router.put('/update/password', authMiddleware, updatePassword);
 
+router.patch('/profile', authMiddleware, updateProfile);
+router.patch('/change-password', authMiddleware, updatePassword);
+router.get('/profile', authMiddleware, getProfile);
+
 module.exports = router;
