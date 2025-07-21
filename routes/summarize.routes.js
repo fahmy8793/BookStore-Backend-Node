@@ -5,6 +5,8 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const validate = require('../middlewares/validate');
 
 
-router.get('/summarize/:bookId',authMiddleware,validate, summarizeController.summarizeBook);
+router.get('/summarize/:bookId',
+    authMiddleware,
+    validate, summarizeController.summarizeBook);
 
 module.exports = router;

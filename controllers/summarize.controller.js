@@ -78,6 +78,7 @@ const summarizeBook = async (req, res) => {
       try {
         const summary = await summarizeTextWithCohere(chunk);
         summaries.push(summary);
+        console.log('Chunk summarized successfully:');
       } catch (err) {
         console.error('Failed to summarize chunk:', err.message);
       }
